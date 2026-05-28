@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Model weights
+*.pth
+*.pt
+
+# Large image/data files
+*.tif
+
+# Outputs
+output/
+
+# OS/editor
+.vscode/
