@@ -6,6 +6,7 @@ Run:
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.db.session import init_db
@@ -28,9 +29,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS — open during development. `allow_origins=["*"]` cannot be combined with
+# `allow_credentials=True`; this API authenticates via the X-API-Key header (not
+# cookies), so credentials are not needed. Tighten allow_origins to your real
+# frontend origin(s) before deploying.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/health", tags=["meta"])
-def health():
+
+@app.get("/livez", tags=["meta"])
+def livez():
+    """Liveness probe - is the process up. Used by Docker/K8s healthchecks."""
     return {"status": "ok"}
 
 

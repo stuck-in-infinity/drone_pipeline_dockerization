@@ -7,6 +7,8 @@ SQLAlchemy>=2.0
 pydantic>=2
 pydantic-settings
 python-multipart        # multipart/form-data uploads
+PyYAML                  # reads the external model catalog (models.yaml)
+gdown                   # download orthos from public Google Drive links (/orthomosaic/from-url)
 
 # For Postgres in production (SQLite needs nothing extra):
 # psycopg2-binary

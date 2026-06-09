@@ -14,8 +14,12 @@ router = APIRouter()
 _REVIEW_STATES = {"AWAITING_LABELS", "LABELS_SUBMITTED", "FINALIZING", "COMPLETED"}
 
 
+def _run(project) -> int:
+    return getattr(project, "current_run", 1) or 1
+
+
 def _clustering_dir(project) -> str:
-    return os.path.join(project_paths(project.id)["step1_output"], "clustering")
+    return os.path.join(project_paths(project.id, _run(project))["step1_output"], "clustering")
 
 
 def build_clustering_payload(request: Request, project) -> dict:
@@ -109,7 +113,7 @@ def clusters_overview(
 def crown_png(image_name: str, project=Depends(get_project)):
     """Render a single crown GeoTIFF to PNG for the labeling UI."""
     safe = os.path.basename(image_name)
-    src = os.path.join(project_paths(project.id)["step1_output"], "crowns", safe)
+    src = os.path.join(project_paths(project.id, _run(project))["step1_output"], "crowns", safe)
     if not os.path.exists(src):
         raise HTTPException(404, "crown not found")
     png = _tif_to_png_bytes(src)
@@ -121,7 +125,7 @@ def crown_png(image_name: str, project=Depends(get_project)):
 @router.get("/projects/{project_id}/detection/overlay.png")
 def overlay_png(project=Depends(get_project)):
     """Detection overlay for the project's orthomosaic."""
-    det = project_paths(project.id)["detectree"]
+    det = project_paths(project.id, _run(project))["detectree"]
     subs = (
         sorted(d for d in os.listdir(det) if os.path.isdir(os.path.join(det, d)))
         if os.path.isdir(det)

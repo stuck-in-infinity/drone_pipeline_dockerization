@@ -12,6 +12,8 @@ def serialize_project(project) -> ProjectOut:
         params=project.params or {},
         recommended_k=project.recommended_k,
         available_k=project.available_k,
+        current_run=project.current_run or 1,
+        runs=project.runs or [],
         orthos=[OrthoOut.model_validate(o) for o in project.orthos],
         error=project.error,
         created_at=project.created_at,

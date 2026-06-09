@@ -9,7 +9,7 @@ import os
 import re
 import types
 
-from app.core.models_registry import resolve_model_path
+from app.core.models_registry import default_backbone, resolve_model_path
 from app.core.storage import project_paths
 
 # KML colours (AABBGGRR), copied from the pipeline's Config.
@@ -28,7 +28,7 @@ def normalize_species(val) -> str:
 
 def build_config(project) -> types.SimpleNamespace:
     """Return an attribute-bag config the pipeline functions accept."""
-    p = project_paths(project.id)
+    p = project_paths(project.id, getattr(project, "current_run", 1) or 1)
     params = dict(project.params or {})
     _, model_path = resolve_model_path(project.model_key)
 
@@ -52,7 +52,7 @@ def build_config(project) -> types.SimpleNamespace:
     cfg.GROUND_TRUTH_CSV = p["input_gt"]   # step3_validate treats this as a folder
 
     # features + clustering (Step 1)
-    cfg.MODEL_NAME = params.get("model_name", "vit_base_patch14_dinov2.lvd142m")
+    cfg.MODEL_NAME = params.get("model_name") or default_backbone()
     cfg.IMG_SIZE = params.get("img_size", 224)
     cfg.BATCH_SIZE = params.get("batch_size", 16)
     cfg.PCA_COMPONENTS = params.get("pca_components", 50)
@@ -73,7 +73,10 @@ def write_species_map_csv(project, chosen_k: int, mapping: dict[int, dict]) -> s
     ``mapping`` maps cluster_id -> {"species": str, "notes": str}.
     Clusters missing from the mapping are written as 'unlabelled'.
     """
-    clustering_dir = os.path.join(project_paths(project.id)["step1_output"], "clustering")
+    clustering_dir = os.path.join(
+        project_paths(project.id, getattr(project, "current_run", 1) or 1)["step1_output"],
+        "clustering",
+    )
     os.makedirs(clustering_dir, exist_ok=True)
     out = os.path.join(clustering_dir, f"k{chosen_k}_cluster_species_map.csv")
     with open(out, "w", newline="") as f:

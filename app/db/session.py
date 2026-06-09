@@ -28,3 +28,27 @@ def init_db() -> None:
     from app.db.base import Base
 
     Base.metadata.create_all(bind=engine)
+    _migrate_sqlite_add_columns()
+
+
+def _migrate_sqlite_add_columns() -> None:
+    """Dev-convenience migration: add columns that ``create_all`` won't add to an
+    existing SQLite file. Keeps older treecrown.db files working without a wipe.
+    Use Alembic for real migrations / non-SQLite backends.
+    """
+    if not settings.database_url.startswith("sqlite"):
+        return
+    wanted = {
+        "projects": {
+            "current_run": "INTEGER DEFAULT 1",
+            "runs": "JSON",
+        },
+    }
+    with engine.begin() as conn:
+        for table, cols in wanted.items():
+            existing = {
+                row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table})").fetchall()
+            }
+            for name, ddl in cols.items():
+                if name not in existing:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")

@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.models_registry import default_backbone
+
 
 class PipelineParams(BaseModel):
     """User-tunable knobs; mirror the pipeline's Config fields."""
@@ -16,7 +18,7 @@ class PipelineParams(BaseModel):
     pca_components: int | None = 50
     batch_size: int = 16
     img_size: int = 224
-    model_name: str = "vit_base_patch14_dinov2.lvd142m"
+    model_name: str = Field(default_factory=default_backbone)
 
 
 class ProjectCreate(BaseModel):
@@ -24,6 +26,22 @@ class ProjectCreate(BaseModel):
     model_key: str | None = None          # None -> server default (urban_cambridge)
     source_epsg: int | None = None        # None -> auto-detected from the GeoTIFF
     params: PipelineParams = Field(default_factory=PipelineParams)
+
+
+class ProjectUpdate(BaseModel):
+    """Partial update for a re-run: change params (and optionally model/EPSG) and
+    open the next run on the same uploaded ortho. All fields optional; ``params``
+    is merged onto the existing params, not replaced wholesale."""
+
+    model_key: str | None = None
+    source_epsg: int | None = None
+    params: dict | None = None
+
+
+class OrthoFromUrl(BaseModel):
+    """Request body for registering an ortho from a public Google Drive link."""
+
+    url: str
 
 
 class OrthoOut(BaseModel):
@@ -46,6 +64,8 @@ class ProjectOut(BaseModel):
     params: dict
     recommended_k: int | None = None
     available_k: list[int] | None = None
+    current_run: int = 1
+    runs: list = []
     orthos: list[OrthoOut] = []
     error: str | None = None
     created_at: datetime

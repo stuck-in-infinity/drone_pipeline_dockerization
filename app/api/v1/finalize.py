@@ -17,7 +17,9 @@ from app.workers.tasks import job_b_finalize
 
 router = APIRouter()
 
-_FINALIZE_OK = {"LABELS_SUBMITTED", "COMPLETED", "FAILED"}
+# Includes FINALIZING so the Airflow DAG callback can run after the
+# /runs/finalize trigger has already moved the project into the in-progress state.
+_FINALIZE_OK = {"LABELS_SUBMITTED", "FINALIZING", "COMPLETED", "FAILED"}
 
 
 @router.post("/projects/{project_id}/finalize")

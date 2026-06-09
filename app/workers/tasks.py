@@ -107,13 +107,16 @@ def job_a_analyze(self, project_id: str, job_id: str):
     try:
         project = db.get(models.Project, project_id)
         job = db.get(models.Job, job_id)
-        paths = ensure_project_dirs(project_id)
-        # fresh analysis: drop any derived artifacts from a previous run so a
-        # stale feature/cluster cache cannot leak into this one.
+        run = project.current_run or 1
+        paths = ensure_project_dirs(project_id, run)
+        # fresh analysis: drop any derived artifacts from a previous attempt of
+        # THIS run so a stale feature/cluster cache cannot leak in. Sibling runs
+        # (run_1, run_2, ...) are untouched.
         reset_dirs(
             project_id,
             ["detectree", "ortho", "polygons", "step1_output",
              "step2_output", "step3_output", "step4_output"],
+            run,
         )
 
         logf = open(os.path.join(paths["logs"], "analyze.log"), "a", buffering=1)
@@ -203,10 +206,11 @@ def job_b_finalize(self, project_id: str, job_id: str):
     try:
         project = db.get(models.Project, project_id)
         job = db.get(models.Job, job_id)
-        paths = ensure_project_dirs(project_id)
+        run = project.current_run or 1
+        paths = ensure_project_dirs(project_id, run)
         # clean outputs from any previous finalize (e.g. after re-labeling) so
         # results never mix old and new species assignments.
-        reset_dirs(project_id, ["step2_output", "step3_output", "step4_output"])
+        reset_dirs(project_id, ["step2_output", "step3_output", "step4_output"], run)
 
         logf = open(os.path.join(paths["logs"], "finalize.log"), "a", buffering=1)
         _set_job(db, job, state="RUNNING", started_at=datetime.utcnow(),
@@ -231,6 +235,16 @@ def job_b_finalize(self, project_id: str, job_id: str):
 
             _set_job(db, job, current_stage="exporting", progress=0.85)
             tcp.step4_export_kmz(cfg)
+
+            # Emit a STAC Item describing this run (footprint + params + assets).
+            # Non-fatal: a STAC failure must not fail an otherwise-good run.
+            _set_job(db, job, current_stage="stac", progress=0.95)
+            try:
+                from app.services.stac import write_stac_item
+
+                write_stac_item(project, chosen_k=cfg.CHOSEN_K)
+            except Exception as stac_exc:  # pragma: no cover - best effort
+                print(f"[stac] item emission skipped: {stac_exc}")
 
         _set_job(db, job, state="SUCCEEDED", current_stage="done",
                  progress=1.0, finished_at=datetime.utcnow())

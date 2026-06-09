@@ -30,6 +30,10 @@ class Project(Base):
     params: Mapped[dict] = mapped_column(JSON, default=dict)
     recommended_k: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_k: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Run versioning: current_run points at the active work/run_<n> folder;
+    # `runs` keeps a lightweight history of prior runs (params + outcome).
+    current_run: Mapped[int] = mapped_column(Integer, default=1)
+    runs: Mapped[list | None] = mapped_column(JSON, default=list)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

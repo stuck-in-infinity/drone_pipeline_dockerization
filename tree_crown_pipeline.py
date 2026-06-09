@@ -291,8 +291,16 @@ def step1_extract_features(config, dir_crowns, model=None):
     
     # Standardize + optional PCA
     X = StandardScaler().fit_transform(features)
-    if config.PCA_COMPONENTS and config.PCA_COMPONENTS < X.shape[1]:
-        X = PCA(n_components=config.PCA_COMPONENTS, random_state=42).fit_transform(X)
+    # PCA can extract at most min(n_samples, n_features) components. Clamp the
+    # configured value so small crown counts (few samples) don't blow up.
+    n_samples, n_features = X.shape
+    max_components = min(n_samples, n_features)
+    n_components = min(config.PCA_COMPONENTS or 0, max_components)
+    if config.PCA_COMPONENTS and n_components >= 1 and n_components < n_features:
+        if n_components < config.PCA_COMPONENTS:
+            print(f'  PCA components clamped {config.PCA_COMPONENTS} → {n_components} '
+                  f'(only {n_samples} samples)')
+        X = PCA(n_components=n_components, random_state=42).fit_transform(X)
         print(f'  PCA applied → shape: {X.shape}')
     else:
         print(f'  PCA skipped — using raw standardized features')

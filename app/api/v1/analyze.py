@@ -19,7 +19,9 @@ from app.workers.tasks import job_a_analyze
 
 router = APIRouter()
 
-_ANALYZE_OK = {"UPLOADED", "AWAITING_LABELS", "FAILED"}
+# Includes ANALYZING so the Airflow DAG callback can run after the /runs/analyze
+# trigger has already moved the project into the in-progress state.
+_ANALYZE_OK = {"UPLOADED", "ANALYZING", "AWAITING_LABELS", "FAILED"}
 
 
 @router.post("/projects/{project_id}/analyze")

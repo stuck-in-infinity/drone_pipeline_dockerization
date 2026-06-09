@@ -8,9 +8,21 @@
   "auth": {
     "type": "apikey",
     "apikey": [
-      { "key": "key", "value": "X-API-Key", "type": "string" },
-      { "key": "value", "value": "{{api_key}}", "type": "string" },
-      { "key": "in", "value": "header", "type": "string" }
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
     ]
   },
   "item": [
@@ -18,29 +30,58 @@
       "name": "Meta",
       "item": [
         {
-          "name": "Health check",
+          "name": "Liveness probe",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "raw": "{{base_url}}/livez",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "livez"
+              ]
             },
-            "description": "Liveness probe. No auth required."
+            "description": "Liveness probe - is the process up. Used by Docker/K8s container healthchecks."
           }
         },
         {
-          "name": "List models",
+          "name": "List detectors",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/models",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "models"]
+              "raw": "{{base_url}}/api/v1/detectors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "detectors"
+              ]
             },
-            "description": "Show the registered Detectree2 .pth weight files, which is the default, and which are present on disk."
+            "description": "Show the registered Detectree2 detector .pth weight files, which is the default, and which are present on disk. Pick one as model_key when creating a project."
+          }
+        },
+        {
+          "name": "List feature-extractors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/feature-extractors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "feature-extractors"
+              ]
+            },
+            "description": "List the allowed DINOv2 feature-extractor models (valid `model_name` values for params), each with its description, intended img_size, and which is the default. Use these to populate a model_name picker. Any model_name NOT in this list is rejected with 400 at project creation."
           }
         }
       ]
@@ -71,7 +112,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -79,10 +123,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/projects",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ]
             },
-            "description": "Create a new project. Valid `model_key` values: urban_cambridge (default), paracou, randresize. `source_epsg` can be null — it's auto-detected from the GeoTIFF on upload.\n\nThe test script in this request saves the returned `project_id` into the environment so later requests can reference {{project_id}}."
+            "description": "Create a new project.\n\n`model_key` (top-level) selects the **detector** - the Detectree2 .pth weights used for crown detection (Step 0). Valid values: urban_cambridge (default), paracou, randresize. See 'List detectors'.\n\n`params.model_name` selects the **DINOv2 feature-extractor** used for clustering (Step 1B). It is validated against an allowlist - valid values: vit_small_patch14_dinov2.lvd142m, vit_base_patch14_dinov2.lvd142m (default), vit_large_patch14_dinov2.lvd142m. See 'List feature-extractors'. An unknown model_name returns 400 here (it no longer fails mid-pipeline). Omit it to use the default.\n\n`source_epsg` can be null - it's auto-detected from the GeoTIFF on upload.\n\nThe test script saves the returned `project_id` into the environment so later requests can reference {{project_id}}."
           }
         },
         {
@@ -92,8 +142,14 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ]
             }
           }
         },
@@ -104,8 +160,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}"
+              ]
             },
             "description": "Full project state, params, orthos, recommended_k, available_k, error message if any."
           }
@@ -117,8 +180,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}"
+              ]
             },
             "description": "Deletes the DB row and the per-project storage directory. 204 No Content on success."
           }
@@ -146,10 +216,49 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/orthomosaic",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "orthomosaic"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "orthomosaic"
+              ]
             },
             "description": "Streams the file to <storage>/<project_id>/input/ortho/. Returns the refreshed ProjectOut."
+          }
+        },
+        {
+          "name": "Upload orthomosaic from URL (Google Drive)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/orthomosaic/from-url",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "orthomosaic",
+                "from-url"
+              ]
+            },
+            "description": "Alternative to the multipart upload: the server downloads the GeoTIFF from a PUBLIC Google Drive share link ('anyone with the link'). Synchronous - blocks for the download, so set a long read timeout for large orthos. Only drive.google.com links are accepted; the file is size-capped and validated as a GeoTIFF. Replaces any previously-registered ortho."
           }
         },
         {
@@ -170,8 +279,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/ground-truth",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "ground-truth"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "ground-truth"
+              ]
             }
           }
         }
@@ -204,8 +321,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/analyze",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "analyze"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "analyze"
+              ]
             },
             "description": "Queues Job A (Detectree2 + DINOv2 features + multi-k clustering + t-SNE) on the `gpu` Celery queue. Requires the project to be in state UPLOADED, AWAITING_LABELS, or FAILED. On success the project transitions to ANALYZING.\n\nThe test script saves the returned `job_id` into the environment."
           }
@@ -217,8 +342,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/jobs/{{job_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "jobs", "{{job_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "jobs",
+                "{{job_id}}"
+              ]
             },
             "description": "Returns state (QUEUED | STARTED | SUCCEEDED | FAILED), current_stage, progress (0..1), the last 40 log lines, and any error. Repeat until state is SUCCEEDED or FAILED."
           }
@@ -253,8 +385,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/clustering",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "clustering"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "clustering"
+              ]
             },
             "description": "Returns available_k, recommended_k, the k_recommendation_table (silhouette / DB / inertia per k), and URLs to the k-selection plot, per-k t-SNE plots, and per-cluster crown thumbnails. Project must be AWAITING_LABELS or later."
           }
@@ -266,8 +406,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/clustering/k-selection.png",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "clustering", "k-selection.png"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "clustering",
+                "k-selection.png"
+              ]
             },
             "description": "Elbow / silhouette / Davies-Bouldin curves across all k. Click 'Save Response → Save to a file' in Postman to download."
           }
@@ -279,8 +428,18 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/clustering/{{chosen_k}}/tsne.png",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "clustering", "{{chosen_k}}", "tsne.png"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "clustering",
+                "{{chosen_k}}",
+                "tsne.png"
+              ]
             },
             "description": "2-D t-SNE scatter colored by cluster id for k = {{chosen_k}}."
           }
@@ -312,10 +471,24 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/clustering/{{chosen_k}}/clusters?samples=8",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "clustering", "{{chosen_k}}", "clusters"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "clustering",
+                "{{chosen_k}}",
+                "clusters"
+              ],
               "query": [
-                { "key": "samples", "value": "8", "description": "How many sample crown URLs to include per cluster." }
+                {
+                  "key": "samples",
+                  "value": "8",
+                  "description": "How many sample crown URLs to include per cluster."
+                }
               ]
             }
           }
@@ -327,8 +500,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/crowns/{{crown_image_name}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "crowns", "{{crown_image_name}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "crowns",
+                "{{crown_image_name}}"
+              ]
             },
             "description": "Render a single crown .tif as PNG. Set crown_image_name to a filename returned by the clusters endpoint."
           }
@@ -340,10 +522,24 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/detection/overlay.png",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "detection", "overlay.png"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "detection",
+                "overlay.png"
+              ],
               "query": [
-                { "key": "stem", "value": "", "description": "With multiple orthos, pass the file stem to pick which overlay.", "disabled": true }
+                {
+                  "key": "stem",
+                  "value": "",
+                  "description": "With multiple orthos, pass the file stem to pick which overlay.",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -375,7 +571,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -383,8 +582,16 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/labels",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "labels"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "labels"
+              ]
             },
             "description": "Close the human-in-the-loop gate. chosen_k must be one of available_k. mapping must contain one entry per cluster (0..chosen_k-1). Project transitions to LABELS_SUBMITTED."
           }
@@ -418,8 +625,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/finalize",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "finalize"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "finalize"
+              ]
             },
             "description": "Queues Job B on the cpu queue. Requires state LABELS_SUBMITTED, COMPLETED, or FAILED. Overwrites job_id env var so the Poll-job request works for Phase B too."
           }
@@ -436,8 +651,16 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/results",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "results"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "results"
+              ]
             },
             "description": "Species distribution counts, validation metrics, and download URLs for KMZ / crown_master.csv / polygon_species.csv / confusion_matrix.png."
           }
@@ -449,8 +672,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/results/kmz",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "results", "kmz"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "results",
+                "kmz"
+              ]
             },
             "description": "Streams species_map.kmz. In Postman click Send -> Save Response -> Save to file."
           }
@@ -462,8 +694,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/results/crown-master.csv",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "results", "crown-master.csv"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "results",
+                "crown-master.csv"
+              ]
             }
           }
         },
@@ -474,8 +715,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/results/polygon-species.csv",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "results", "polygon-species.csv"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "results",
+                "polygon-species.csv"
+              ]
             }
           }
         },
@@ -486,8 +736,17 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/v1/projects/{{project_id}}/results/confusion-matrix.png",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "projects", "{{project_id}}", "results", "confusion-matrix.png"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "results",
+                "confusion-matrix.png"
+              ]
             }
           }
         }
@@ -495,6 +754,9 @@
     }
   ],
   "variable": [
-    { "key": "base_url", "value": "http://localhost:8000" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    }
   ]
 }
